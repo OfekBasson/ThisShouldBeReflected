@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="This Should Be Reflected! We fine-tune a pretrained image model to fill mirrors with content that agrees with the visible scene, using a pixel-space loss on only the mirror pixels that the photo determines.">
+  <meta name="keywords" content="mirror inpainting, reflections, flow matching, fine-tuning, LoRA, image generation, MSD-V2">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>This Should Be Reflected! Teaching Image Models to Fill Mirrors with the Correct Content</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+</head>
+<body>
+
+<!-- ─────────────────────── HERO ─────────────────────── -->
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+
+          <h1 class="title is-1 publication-title">
+            This Should Be Reflected!
+            <br><span class="title-sub">Teaching Image Models to Fill Mirrors with the Correct Content</span>
+          </h1>
+
+          <div class="is-size-5 publication-authors mb-2">
+            <span class="author-block"><a href="https://ofekbasson.com" target="_blank" rel="noopener">Ofek Basson</a>, </span>
+            <span class="author-block"><a href="https://www.linkedin.com/in/sv3d" target="_blank" rel="noopener">Shimon Vainer</a>, </span>
+            <span class="author-block"><a href="https://faculty.runi.ac.il/toky/homepage/index.html" target="_blank" rel="noopener">Yacov Hel-Or</a>, </span>
+            <span class="author-block"><a href="https://www.ohadf.com/" target="_blank" rel="noopener">Ohad Fried</a></span>
+          </div>
+
+          <div class="publication-links">
+            <span class="link-block">
+              <span class="button is-normal is-rounded is-dark soon" title="Coming soon">
+                <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                <span>Paper</span><span class="soon-tag">soon</span>
+              </span>
+            </span>
+            <span class="link-block">
+              <span class="button is-normal is-rounded is-dark soon" title="Coming soon">
+                <span class="icon"><i class="ai ai-arxiv"></i></span>
+                <span>arXiv</span><span class="soon-tag">soon</span>
+              </span>
+            </span>
+            <span class="link-block">
+              <span class="button is-normal is-rounded is-dark soon" title="Coming soon">
+                <span class="icon"><i class="fab fa-github"></i></span>
+                <span>Code &amp; Models</span><span class="soon-tag">soon</span>
+              </span>
+            </span>
+            <span class="link-block">
+              <span class="button is-normal is-rounded is-dark soon" title="Coming soon">
+                <span class="icon"><i class="far fa-images"></i></span>
+                <span>MSD-V2 Split</span><span class="soon-tag">soon</span>
+              </span>
+            </span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── TEASER ─────────────────────── -->
+<section class="hero teaser">
+  <div class="container is-max-widescreen">
+    <div class="hero-body">
+      <div>
+        <img src="./static/images/teaser.jpg" alt="Two test photos with an empty mirror, filled by Qwen-Image-2.1, FLUX.1 Fill, FLUX.2, MirrorFusion 2.0 and our method, next to the ground truth and the constrained mirror pixels" class="figure-img">
+      </div>
+      <h2 class="subtitle has-text-centered mt-4">
+        <strong>A mirror must reflect the scene.</strong> Given a photo with an empty mirror (green outline),
+        current image models fill it with plausible but wrong content. Part of the mirror shows scene content
+        that is already visible in the photo (red, right). With a loss on exactly these pixels,
+        our model comes closer to the ground truth.
+      </h2>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── ABSTRACT ─────────────────────── -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            A mirror shows the surrounding scene from another viewpoint, so its content must agree with
+            the rest of the photo. Image generators often fill mirrors with plausible content that
+            contradicts the scene. We observe that part of a mirror shows things the photo already shows,
+            which fixes how it must look; we call these pixels <em>constrained</em>. The rest can be filled
+            in many ways.
+          </p>
+          <p>
+            We therefore fine-tune a pretrained image model with an extra loss on exactly these pixels,
+            which we find by matching the mirror against the rest of the photo, and we compute this loss
+            on the decoded image rather than on latents. We also build <strong>MSD-V2</strong>, a split of
+            the Mirror Segmentation Dataset with no locations or objects shared between training and test.
+          </p>
+          <p>
+            Averaged over 5 training runs, our model improves PSNR on the constrained pixels by
+            <strong>+3.30&nbsp;dB</strong> over the vanilla model and by <strong>+0.71&nbsp;dB</strong> over
+            standard fine-tuning on the same images (<em>p</em>&nbsp;=&nbsp;0.0011), and places reflected
+            scene points correctly more often (<strong>27%</strong> against 15%,
+            <em>p</em>&nbsp;=&nbsp;0.00026).
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── KEY IDEA ─────────────────────── -->
+<section class="section section-alt">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Key Idea: Not Every Mirror Pixel Is Free</h2>
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <div class="content has-text-justified">
+          <p>
+            A mirror has no appearance of its own: it shows the scene from a second, virtual viewpoint.
+            In mirror inpainting, the photo is given and only the mirror is empty, so the mirror holds two
+            kinds of pixels:
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="columns is-variable is-5">
+      <div class="column">
+        <div class="idea-card constrained">
+          <h3 class="title is-5"><span class="swatch swatch-red"></span>Constrained pixels</h3>
+          <p>They reflect parts of the scene that are also visible in the photo. Their correct values are
+          fixed by the photo, and a wrong value is a real geometric error.</p>
+        </div>
+      </div>
+      <div class="column">
+        <div class="idea-card free">
+          <h3 class="title is-5"><span class="swatch swatch-grey"></span>Free pixels</h3>
+          <p>They reflect parts of the scene that the camera never saw. Many fillings are correct, so
+          forcing the model to match one ground truth there only pushes it toward an arbitrary or averaged answer.</p>
+        </div>
+      </div>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <div class="content has-text-justified">
+          <p>
+            The standard fine-tuning loss treats all mirror pixels the same. We keep it, and add a loss that
+            looks only at the constrained pixels.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── METHOD ─────────────────────── -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Method</h2>
+
+    <div class="columns is-centered mb-5">
+      <div class="column has-text-centered">
+        <img src="./static/images/method.png" alt="Method overview: one training step" class="figure-img">
+        <p class="figure-caption">
+          One training step. The model predicts a velocity from the masked photo, the prompt, and a noisy
+          latent; the flow-matching loss trains it on the whole mirror. One Euler step turns the prediction
+          into a clean estimate, which we decode; the RC loss compares it with the ground truth only on the
+          constrained pixels. Only the LoRA weights are trained.
+        </p>
+      </div>
+    </div>
+
+    <div class="columns is-variable is-5">
+      <div class="column">
+        <div class="method-step">
+          <div class="step-number">1</div>
+          <h3 class="title is-5 mt-2">Keep the prior</h3>
+          <p>We fine-tune Qwen-Image-2.1 with LoRA on real mirror photos, using the standard flow-matching
+          loss inside the mirror. This keeps what the model knows about scenes and already improves every
+          quality metric, but reflections are still often geometrically wrong.</p>
+        </div>
+      </div>
+      <div class="column">
+        <div class="method-step">
+          <div class="step-number">2</div>
+          <h3 class="title is-5 mt-2">Supervise the constrained pixels</h3>
+          <p>We add a loss term on the Reflection Constraint (RC) mask: the mirror pixels that the visible
+          scene determines. We train on images whose mask is reliable, judged by the number of
+          correspondences.</p>
+        </div>
+      </div>
+      <div class="column">
+        <div class="method-step">
+          <div class="step-number">3</div>
+          <h3 class="title is-5 mt-2">Compute it in pixel space</h3>
+          <p>A latent is a compressed code, 16&times; coarser than the image. We decode the one-step
+          estimate of the clean image and compare it with the ground truth on the image itself.
+          This beats the same loss in latent space by +0.69&nbsp;dB on the constrained pixels.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── RC MASK ─────────────────────── -->
+<section class="section section-alt">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Finding the Constrained Pixels: the RC Mask</h2>
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <div class="content has-text-justified">
+          <p>
+            The mirror content, flipped, looks like a second photo of the same scene. We split the photo
+            into a <em>scene view</em>, with the mirror blacked out, and a flipped <em>mirror view</em>, and
+            match the two with <strong>MASt3R</strong>. A mirror pixel with a match shows a scene point
+            that the photo also shows, so the photo fixes its value. We dilate the matched points inside
+            the mirror to get the Reflection Constraint (RC) mask.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="columns is-centered mt-2">
+      <div class="column has-text-centered">
+        <div>
+          <img src="./static/images/rc_mask.png" alt="Building the RC mask: scene view, flipped mirror view, MASt3R correspondences, dilated RC mask" class="figure-img">
+        </div>
+        <p class="figure-caption">
+          The bear and the pink bucket appear in both views, so their reflection is matched. Unmatched mirror
+          pixels, such as the top and edges of this mirror, are left out, since many fillings are plausible there.
+        </p>
+      </div>
+    </div>
+
+    <div class="columns is-centered mt-2">
+      <div class="column is-four-fifths">
+        <div class="content has-text-justified">
+          <p>
+            On 2,991 rendered scenes of MirrorBench-V2, where the true geometry is known, 72% of the mask
+            pixels are truly constrained and the mask finds 86% of the truly constrained pixels; on scenes
+            that pass our reliability cutoff, these rise to 76% and 94%. To decide which masks to trust, we
+            labeled 393 masks by hand. Keeping masks with at least 2,000 correspondences gives 84% good
+            masks while keeping 83% of the good ones.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── INTERACTIVE RESULTS ─────────────────────── -->
+<section class="section" id="results">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Qualitative Results</h2>
+    <div class="content has-text-centered mb-4">
+      <p>
+        MSD-V2 test photos, mirror outlined in green. Drag the slider to compare two methods,
+        pick the methods for each side, and choose a photo below.
+      </p>
+    </div>
+
+    <div class="compare-panel">
+      <div class="side-pickers">
+        <div class="picker">
+          <span class="picker-label">Left</span>
+          <div class="chips" id="pick-left"></div>
+        </div>
+        <div class="picker">
+          <span class="picker-label">Right</span>
+          <div class="chips" id="pick-right"></div>
+        </div>
+      </div>
+
+      <div class="compare-wrap" id="compare">
+        <img class="cmp-base" id="cmp-right" alt="">
+        <img class="cmp-top" id="cmp-left" alt="">
+        <div class="cmp-handle" id="cmp-handle"><span class="cmp-knob"><i class="fas fa-arrows-alt-h"></i></span></div>
+        <span class="cmp-label left" id="lbl-left"></span>
+        <span class="cmp-label right" id="lbl-right"></span>
+      </div>
+      <p class="scene-caption" id="scene-caption"></p>
+
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── FINE-TUNING FAILURE ─────────────────────── -->
+<section class="section section-alt">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Fine-Tuning Alone Is Not Enough</h2>
+    <div class="ft-grid">
+      <figure><img src="./static/images/finetune/input.jpg" alt="Input"><figcaption>Input</figcaption></figure>
+      <figure><img src="./static/images/finetune/finetuned.jpg" alt="Standard fine-tuning"><figcaption>Standard fine-tuning</figcaption></figure>
+      <figure><img src="./static/images/finetune/ours.jpg" alt="Ours"><figcaption><strong>Ours</strong></figcaption></figure>
+      <figure><img src="./static/images/finetune/gt.jpg" alt="Ground truth"><figcaption>Ground truth</figcaption></figure>
+    </div>
+    <p class="figure-caption has-text-centered">
+      Qwen-Image-2.1 fine-tuned with the standard flow-matching loss distorts the reflected arrow, although
+      the photo shows it. With our loss, the arrow is in the right place and direction.
+    </p>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── QUANTITATIVE ─────────────────────── -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Quantitative Results</h2>
+
+    <h3 class="title is-5 mt-4">MSD-V2 test set</h3>
+    <p class="mb-3 table-note">
+      Constrained-pixel metrics use the 108 test photos with a reliable RC mask; PCK@5% (share of reflected
+      scene points placed within 5% of the mirror diagonal, measured with RoMa, independent of the RC mask)
+      uses the 48 photos with enough anchors; the other columns use all 236. Fine-tuned models are the mean
+      over 5 training runs. Sharpness is the variance of the Laplacian (ground truth: 679).
+    </p>
+    <div class="table-container">
+      <table class="table is-striped is-narrow is-hoverable is-fullwidth metric-table">
+        <thead>
+          <tr>
+            <th rowspan="2" class="method-col">Method</th>
+            <th colspan="4">Constrained pixels (RC mask)</th>
+            <th colspan="4">Full mirror</th>
+            <th rowspan="2">Sharp.</th>
+            <th rowspan="2">PCK@5%↑</th>
+          </tr>
+          <tr>
+            <th>PSNR↑</th><th>SSIM↑</th><th>LPIPS↓</th><th>DINO↑</th>
+            <th>PSNR↑</th><th>SSIM↑</th><th>LPIPS↓</th><th>DINO↑</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="method-col">Qwen-Image-2.1 (no fine-tuning)</td>
+            <td>14.90</td><td>0.433</td><td>0.515</td><td>0.529</td><td>12.35</td><td>0.393</td><td>0.582</td><td>0.469</td><td>672</td><td>0.065</td></tr>
+          <tr><td class="method-col">FLUX.2 [dev] (no fine-tuning)</td>
+            <td>12.94</td><td>0.404</td><td>0.555</td><td>0.501</td><td>10.74</td><td>0.323</td><td>0.634</td><td>0.438</td><td>812</td><td>0.066</td></tr>
+          <tr><td class="method-col">FLUX.1 Fill [dev] (no fine-tuning)</td>
+            <td>15.95</td><td>0.500</td><td>0.459</td><td>0.577</td><td>13.50</td><td>0.449</td><td>0.541</td><td>0.489</td><td>557</td><td>0.085</td></tr>
+          <tr><td class="method-col">MirrorFusion 2.0 (fine-tuned on MSD)</td>
+            <td>10.13</td><td>0.292</td><td>0.636</td><td>0.409</td><td>9.73</td><td>0.298</td><td>0.648</td><td>0.412</td><td>553</td><td>0.001</td></tr>
+          <tr class="group-start"><td class="method-col">Flow-matching fine-tuning, all training images</td>
+            <td>17.52</td><td>0.535</td><td>0.385</td><td>0.631</td><td>14.18</td><td>0.483</td><td>0.488</td><td>0.535</td><td>434</td><td>0.109</td></tr>
+          <tr><td class="method-col">Flow-matching fine-tuning, reliable-mask images</td>
+            <td>17.50</td><td>0.533</td><td>0.377</td><td>0.640</td><td>14.16</td><td>0.480</td><td>0.485</td><td>0.538</td><td>439</td><td>0.151</td></tr>
+          <tr class="ours-row"><td class="method-col">Ours: flow matching + pixel-space RC loss</td>
+            <td><b>18.21</b></td><td><b>0.549</b></td><td><b>0.371</b></td><td><b>0.663</b></td><td><b>14.59</b></td><td><b>0.494</b></td><td><b>0.481</b></td><td><b>0.554</b></td><td>385</td><td><b>0.271</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="content mt-3">
+      <ul class="findings">
+        <li>Against flow-matching fine-tuning on the <em>same</em> images, the only difference being our loss,
+          Ours raises PSNR on the constrained pixels by <strong>+0.71&nbsp;dB</strong> (<em>p</em>&nbsp;=&nbsp;0.0011)
+          and is better on 76% of the test photos.</li>
+        <li>Ours places <strong>27%</strong> of reflected scene points correctly, against 15% for standard
+          fine-tuning on the same images (<em>p</em>&nbsp;=&nbsp;0.00026) and under 10% for every vanilla model.</li>
+        <li>The cost is a little sharpness; fine-tuning alone already lowers it.</li>
+      </ul>
+    </div>
+
+    <h3 class="title is-5 mt-6">Does it matter which pixels the loss covers?</h3>
+    <p class="mb-3 table-note">
+      All models use flow matching on the reliable-mask images and differ only in the pixels of the pixel-space
+      loss. Mean &plusmn; standard deviation over 5 training runs.
+    </p>
+    <div class="table-container narrow-table">
+      <table class="table is-striped is-narrow is-hoverable is-fullwidth metric-table">
+        <thead>
+          <tr><th class="method-col">Pixel-space loss on</th><th>PSNR↑ (constrained)</th><th>PCK@5%↑</th><th>Sharpness</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="method-col">None</td><td>17.50 &plusmn; 0.25</td><td>0.151 &plusmn; 0.033</td><td>439 &plusmn; 8</td></tr>
+          <tr><td class="method-col">Whole mirror</td><td>17.79 &plusmn; 0.32</td><td>0.183 &plusmn; 0.024</td><td>399 &plusmn; 8</td></tr>
+          <tr><td class="method-col">Random region (same area as the RC mask)</td><td>17.72 &plusmn; 0.43</td><td>0.206 &plusmn; 0.026</td><td>395 &plusmn; 19</td></tr>
+          <tr><td class="method-col">Rest of the mirror (free pixels only)</td><td>17.66 &plusmn; 0.33</td><td>0.153 &plusmn; 0.014</td><td>401 &plusmn; 4</td></tr>
+          <tr class="ours-row"><td class="method-col">RC mask (Ours)</td><td><b>18.21 &plusmn; 0.16</b></td><td><b>0.271 &plusmn; 0.025</b></td><td>385 &plusmn; 8</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note mt-3">
+      Ours places reflected scene points correctly more often than all three alternatives. Supervising only the
+      free pixels places no more points correctly than flow matching alone, so <em>which</em> pixels the loss
+      covers matters, not only how many.
+    </p>
+
+    <h3 class="title is-5 mt-6">User study</h3>
+    <p class="table-note">
+      29 participants compared Ours with flow-matching fine-tuning (on both training sets) and with FLUX.1 Fill.
+      They preferred Ours for <strong>consistency with the scene</strong> with probability 66% to 75% against each
+      model (all <em>p</em>&nbsp;&le;&nbsp;0.00085, Holm-corrected). For visual quality, they preferred Ours over
+      fine-tuning on all images (79%) and rated it about equal to the other two models, although it is less sharp.
+    </p>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── MSD-V2 ─────────────────────── -->
+<section class="section section-alt">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">MSD-V2: A Split Without Shared Scenes</h2>
+    <div class="columns is-vcentered">
+      <div class="column is-half">
+        <img src="./static/images/leak.jpg" alt="Training and test photos of the same place and objects in the original MSD split" class="figure-img">
+        <p class="figure-caption">
+          Leaks in the original MSD split: each pair shows a training and a test photo of the same place and
+          objects. A model trained on the left photo has already seen the mirror content on the right.
+        </p>
+      </div>
+      <div class="column is-half">
+        <div class="content has-text-justified">
+          <p>
+            In the original Mirror Segmentation Dataset split, many test photos show the same room and objects
+            as training photos: 438 of the 608 test images we keep show a location or object that also appears
+            in training. A model can then fill a mirror from memory.
+          </p>
+          <p>
+            We annotated all <strong>4,007</strong> photos with their location (117) and object group (335),
+            removed 1,296 images that do not fit the task (no visible reflected content, several or curved
+            mirrors, or photos that tie groups together), and split the rest so that no location or object
+            group is shared:
+          </p>
+          <div class="split-stats">
+            <div><span class="num">2,328</span><span class="lbl">train</span></div>
+            <div><span class="num">147</span><span class="lbl">validation</span></div>
+            <div><span class="num">236</span><span class="lbl">test</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── BIBTEX ─────────────────────── -->
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@article{basson2026reflected,
+  title   = {This Should Be Reflected! Teaching Image Models to Fill Mirrors with the Correct Content},
+  author  = {Basson, Ofek and Vainer, Shimon and Hel-Or, Yacov and Fried, Ohad},
+  journal = {arXiv preprint},
+  year    = {2026},
+}</code></pre>
+  </div>
+</section>
+
+
+<!-- ─────────────────────── FOOTER ─────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8 has-text-centered">
+        <p class="footer-note">
+          Website template adapted from
+          <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a>,
+          licensed under <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="./static/js/compare.js"></script>
+</body>
+</html>
